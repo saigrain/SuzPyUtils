@@ -1,0 +1,47 @@
+SuzUtils - Suzanne Aigrain
+
+This repository contains miscellaneous bits of code I have written or
+pilfered, which I use often, and which I thought might be usefuly to
+others, but weren't substantial enough to warrant their own
+repository. I have tried to document each routine / module reasonably
+well. Comments / feedback welcome! Also please let me know if you make
+significant improvements to any of these that you think I should
+incorporate.
+
+Currently included
+
+- periodograms: Various tools for time-series analysis in the Fourier domain.
+  - sinefit: least squares fitting of sine curves to a time-series
+    with arbitrary time-sampling (this is a generalisation of the
+    Lomb-Scargle periodogram, but it doesn't include the false alarm
+    probability and significance measures, which are almost always
+    misleading anyway)
+  - DftPowerspectrum: compute and plot the power spectrum of a regularly
+    sampled time-series using the discr ete FFT (shows how to get the
+    normalisation right, and which frequencies correspond to which
+    element in the array)
+  - AcfPeriodogram: compute and plot the ACF of a regularly sampled
+    time-series and its amplitude spectrum (also known as the
+    periodogram of the time-series), after optional smoothing.
+
+- filter: routines to filter time-series (or any 1-D dataset)
+  - filt1d: combination of linear (boxcar or gauss) and median filter,
+    with edge reflection or circular edge criterion
+  - boxcare: boxcar (moving average) filter with edge reflection or
+    circular edge criterion
+  - gausse: Gaussian (tapered window) filter with edge reflection or
+    circular edge criterion
+  - NIF: iterative version of filt1d with k-sigma clipping (Aigrain &
+    Irwin 2004)
+
+- norm: NaN-robust wrappers for min, max, mean, median, sum, plus
+  routines to compute median and MAD-estimated scatter, to normalise
+  to zero mean and unit variance, and to scale to range from 0 to 1.
+
+- multiplot: routines to make plots with shared axes
+
+- mpfit: non-linear least squares optimization using
+  Levenberg-Marquart algorithm, with option to fix or bound some
+  parameters. Adapted by me from a really old version that was itself
+  adapted from the IDL routine of the same name. Horribly cumbersome
+  and rather unstable but quite useful because very generic.
