@@ -4,7 +4,7 @@ filter.py: some simple routines to filter time-series.
 
 import numpy as np
 from scipy import signal, interpolate
-form norm import *
+from norm import *
 
 def filt1d(array, nmed, nlin, fill = False, circ = False, kernel = 'box'):
     '''
@@ -70,7 +70,7 @@ def filt1d(array, nmed, nlin, fill = False, circ = False, kernel = 'box'):
     # Filter
     if nmed > 1: work = signal.medfilt(work2, nmed) 
     else: work = work2
-    if kernel == 'gauss'
+    if kernel == 'gauss':
         box = signal.gaussian(10 * nlin, nlin)
     else:
         box = signal.boxcar(2*nlin+1)

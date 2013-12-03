@@ -33,6 +33,22 @@ def mysum(array, axis = None):
         res[l_sum==0] = np.nan
     return res
 
+def mymean(array):
+    '''
+    Return mean of array (ignoring NaNs)
+    '''
+    l = np.isfinite(array)
+    if l.any() == False: return np.nan
+    return(array[l].mean())
+
+def mystd(array):
+    '''
+    Return standard deviation of array (ignoring NaNs)
+    '''
+    l = np.isfinite(array)
+    if l.any() == False: return np.nan
+    return(array[l].std())
+
 def mymin(array):
     '''
     Return minimum of array (ignoring NaNs)

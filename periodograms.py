@@ -123,7 +123,7 @@ def sinefit(time, data, err = None, fmin = None, fmax = None, \
     best_rchi2 = mymin(rchi2)
     i = np.where(rchi2 == best_rchi2)[0]
     best_freq = freq[i]
-    best_per = 1./ofreq
+    best_per = 1./best_freq
     best_amp = amp[i]
     best_phase = phase[i]
     best_dc = dc[i]
@@ -162,7 +162,7 @@ def sinefit(time, data, err = None, fmin = None, fmax = None, \
 	    plt.errorbar(ph, data, err, fmt = 'k.', capsize = 0)
 	x = np.r_[0:best_per:101j]
 	y = best_amp * np.sin(2 * np.pi * x / best_per + best_phase) + best_dc
-	plt.plot(x/oper, y, 'r')
+	plt.plot(x/best_per, y, 'r')
 	plt.xlim(0,1)
 	plt.xlabel('phase')
 	plt.ylabel('data')
@@ -194,9 +194,9 @@ def DftPowerSpectrum(x, dt = 1, norm = False, doplot = False):
 	plt.ylabel('data')
 	plt.xlim(0,n*dt)
 	plt.subplot(212)
-        plt.plot(freq, ps, 'k-')
-        plt.xlabel('frequency')
-        plt.ylabel('power')
+    plt.plot(freq, ps, 'k-')
+    plt.xlabel('frequency')
+    plt.ylabel('power')
     return ps, freq
 
 def AcfPeriodogram(x, dt = 1, norm = False, doplot = False, \
@@ -219,21 +219,21 @@ def AcfPeriodogram(x, dt = 1, norm = False, doplot = False, \
         corr *= np.sinc(np.pi/box)
     pgram, freq = DftPowerSpectrum(corr, dt, doplot = False)
     if doplot == True:
-	plt.figure(figsize = (6,7.5))
-	plt.subplot(311)
+        plt.figure(figsize = (6,7.5))
+        plt.subplot(311)
         plt.title('ACF periodogram')
-	t = np.arange(len(x))*dt
-	plt.plot(t, x, 'k-')
-	plt.xlabel('time')
-	plt.ylabel('data')
-	plt.xlim(0,len(x)*dt)
-	plt.subplot(312)
+        t = np.arange(len(x))*dt
+        plt.plot(t, x, 'k-')
+        plt.xlabel('time')
+        plt.ylabel('data')
+        plt.xlim(0,len(x)*dt)
+        plt.subplot(312)
         l = lag >= 0
         plt.plot(lag[l]*dt, corr[l], 'k-')
         plt.ylabel('ACF')
         plt.xlabel('lag (time units)')
         plt.xlim(0,lag.max()*dt)
-	plt.subplot(313)
+        plt.subplot(313)
         plt.plot(freq, pgram, 'k-')
         plt.xlabel('frequency')
         if smooth == True:

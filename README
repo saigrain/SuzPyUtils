@@ -1,14 +1,14 @@
 SuzUtils - Suzanne Aigrain
 
 This repository contains miscellaneous bits of code I have written or
-pilfered, which I use often, and which I thought might be usefuly to
+pilfered, which I use often, and which I thought might be useful to
 others, but weren't substantial enough to warrant their own
 repository. I have tried to document each routine / module reasonably
 well. Comments / feedback welcome! Also please let me know if you make
 significant improvements to any of these that you think I should
 incorporate.
 
-Currently included
+Currently included (last updated December 2013)
 
 - periodograms: Various tools for time-series analysis in the Fourier domain.
   - sinefit: least squares fitting of sine curves to a time-series
@@ -17,7 +17,7 @@ Currently included
     probability and significance measures, which are almost always
     misleading anyway)
   - DftPowerspectrum: compute and plot the power spectrum of a regularly
-    sampled time-series using the discr ete FFT (shows how to get the
+    sampled time-series using the discrete FFT (shows how to get the
     normalisation right, and which frequencies correspond to which
     element in the array)
   - AcfPeriodogram: compute and plot the ACF of a regularly sampled
@@ -45,3 +45,36 @@ Currently included
   parameters. Adapted by me from a really old version that was itself
   adapted from the IDL routine of the same name. Horribly cumbersome
   and rather unstable but quite useful because very generic.
+
+- show_cmaps.py: little script to display the available color maps
+
+- extrema.py: returns indices and values of the extrema of an array
+
+- GP_simple: ultra-simple GP regression code, useful to show complete
+  GP newbies just how simple it all is
+
+- GP_suz: a slightly more sophisticated GP regression code designed to
+  be called from other programs. Includes a range of kernel functions,
+  and a transit mean function (using Tom Evans's planetc module) - ask
+  me if you want some other kernel or mean functions added. Also
+  includes functions to tune the parameters using max-likelihood
+  (scipy.optmize.fmin) or a simple Metropolis-Hastings MCMC. The
+  likelihood can be combined with priors to explore a posterior
+  distribution but at the moment only Gaussian priors are implemented.
+
+- spot_model: generate light and radial velocity curves for active
+  stars using a very simple spot model (no faculae, no
+  penumbra). There are two options, one that includes limb-darkening
+  and projection effects over the spots, using the formalism of Dorren
+  (1989) for circular spots, but is slow, and one that ignores these
+  effects, but is very fast. The user can set the stellar radius and
+  inclination, the (linear) limb-darkening coefficient for the
+  photosphere, the number of spots, and the effective size (size *
+  contrast), longitude, latitude, limb-darkening coefficient, and
+  rotation period of each spot. Spot evolution can also be included,
+  in this case the effective size of each spot varies according to a
+  bell-shaped (Gaussian) curve with standard deviation and peak time
+  specified by the user. The code incluces user-friendly routines for
+  generating and plotting either regularly sampled time-series, or
+  irregularly-sampled time-series more typical of ground-based
+  observations, as well as their periodograms.
