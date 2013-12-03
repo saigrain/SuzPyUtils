@@ -78,3 +78,6 @@ Currently included (last updated December 2013)
   generating and plotting either regularly sampled time-series, or
   irregularly-sampled time-series more typical of ground-based
   observations, as well as their periodograms.
+
+- orbit: compute sky coordinates and radial velocities for star or
+  planet in two-body Keplerian system.
