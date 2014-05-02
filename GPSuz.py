@@ -66,7 +66,13 @@ def transit_MF(p, x):
         pars['c4'] = p[12]
     return transit.ma02_aRs(x, **pars)
 
-def GP_negloglik(p, x, y, typ = 'SE', MF = None, n_MF_par = 0, \
+def step_MF(p, x):
+    y = numpy.zeros(len(x)) + p[0]
+    l = x > p[1]
+    y[l] = p[2]
+    return y
+
+def GP_negloglik(p, x, y, cov_func = None, cov_typ = 'SE', MF = None, n_MF_par = 0, \
                  MF_args = None, fixed = None, fixed_par = None, \
                  prior = None):
     '''
@@ -89,17 +95,21 @@ def GP_negloglik(p, x, y, typ = 'SE', MF = None, n_MF_par = 0, \
         r = y - scipy.matrix([MF(par[-n_MF_par:], MF_args)]).T
     else:
         r = y[:]
-    if (par[0] < 1e-6):
-        print 'Warning: 1st amplitude term smaller than 1e-6'
-        return 1e20        
-    if (par[-n_MF_par-1] < 1e-6):
-        print 'Warning: white noise term smaller than 1e-6'
-        return 1e20        
-    K = GP_covmat(x, x, par[:-n_MF_par-1], typ = typ, sigma = par[-n_MF_par-1])
+    if cov_func == None:
+        K = GP_covmat(x, x, par[:-n_MF_par-1], typ = cov_typ, sigma = par[-n_MF_par-1])
+    else:
+        if n_MF_par == 0:
+            covpar_end = len(par)
+        else:
+            covpar_end = -n_MF_par
+        K = cov_func(x, x, par[:covpar_end], white_noise = True)            
     try:
         L = scipy.linalg.cho_factor(K)
     except scipy.linalg.LinAlgError:
+        pylab.clf()
+        pylab.imshow(K, interpolation = 'nearest')
         print 'Warning: covariance matrix was not positive definite'
+        raw_input('continue?')
         return 1e20
     a = numpy.log(numpy.diag(L[0])).sum()
     b = scipy.linalg.cho_solve(L, r)
@@ -110,7 +120,8 @@ def GP_negloglik(p, x, y, typ = 'SE', MF = None, n_MF_par = 0, \
                 a += ((par[i] - prior[i,0]) / prior[i,1])**2 
     return a
 
-def GP_train(x, y, cov_par, cov_typ ='SE', cov_fixed = None, prior = None, \
+def GP_train(x, y, cov_par, cov_func = None, cov_typ ='SE', \
+             cov_fixed = None, prior = None, \
              MF = None, MF_par = None, MF_args = None, \
              MF_fixed = None):
     '''    
@@ -121,9 +132,10 @@ def GP_train(x, y, cov_par, cov_typ ='SE', cov_fixed = None, prior = None, \
     if MF != None:
         merged_par = scipy.append(cov_par, MF_par)
         n_MF_par = len(MF_par)
-        fixed = scipy.append(scipy.zeros(len(cov_par), 'bool'), scipy.zeros(n_MF_par, 'bool'))
+        fixed = scipy.append(scipy.zeros(len(cov_par), 'bool'), \
+                             scipy.zeros(n_MF_par, 'bool'))
         if (cov_fixed != None): fixed[0:-n_MF_par] = cov_fixed
-        if (MF_fixed != None): MF[-n_MF_par:] = MF_fixed
+        if (MF_fixed != None): fixed[-n_MF_par:] = MF_fixed
         if MF_args == None: MF_args = x[:]
     else:
         merged_par = cov_par[:]
@@ -132,7 +144,7 @@ def GP_train(x, y, cov_par, cov_typ ='SE', cov_fixed = None, prior = None, \
         if cov_fixed != None: fixed[:] = cov_fixed
     var_par_in = merged_par[fixed == False]
     fixed_par = merged_par[fixed == True]
-    args = (x, y, cov_typ, MF, n_MF_par, MF_args, fixed, fixed_par, prior)
+    args = (x, y, cov_func, cov_typ, MF, n_MF_par, MF_args, fixed, fixed_par, prior)
     var_par_out = \
         sop.fmin(GP_negloglik, var_par_in, args)
     par_out = scipy.copy(merged_par)
@@ -143,7 +155,8 @@ def GP_train(x, y, cov_par, cov_typ ='SE', cov_fixed = None, prior = None, \
     else:
         return par_out
 
-def GP_train_MCMC(Nstep, x, y, cov_par, cov_scales, cov_typ = 'SE', cov_prior = None, \
+def GP_train_MCMC(Nstep, x, y, cov_par, cov_scales, cov_func = None, \
+                  cov_typ = 'SE', cov_prior = None, \
                   MF = None, MF_par = None, MF_scales = None, MF_args = None, \
                   MF_prior = None):
     '''    
@@ -183,7 +196,8 @@ def GP_train_MCMC(Nstep, x, y, cov_par, cov_scales, cov_typ = 'SE', cov_prior = 
     var_scales = scales[scales > 0]
     fixed_par = scales[scales == 0]
     chain = scipy.zeros((Nstep, nvar+1)) - 1
-    logL = - GP_negloglik(var_par, x, y, typ = cov_typ, MF = MF, n_MF_par = n_MF_par, \
+    logL = - GP_negloglik(var_par, x, y, covfunc = cov_func, covtyp = cov_typ, \
+                          MF = MF, n_MF_par = n_MF_par, \
                           MF_args = MF_args, fixed = fixed, fixed_par = params[fixed])
     randnos = scipy.log(scipy.rand(Nstep))
     for i in range(Nstep):
@@ -191,7 +205,8 @@ def GP_train_MCMC(Nstep, x, y, cov_par, cov_scales, cov_typ = 'SE', cov_prior = 
         var_par_new = var_par + shift
         print var_par_new
         logL_new = \
-            - GP_negloglik(var_par_new, x, y, typ = cov_typ, MF = MF, n_MF_par = n_MF_par, \
+            - GP_negloglik(var_par_new, x, y, covfunc = cov_func, \
+                           covtyp = cov_typ, MF = MF, n_MF_par = n_MF_par, \
                            MF_args = MF_args, fixed = fixed, fixed_par = params[fixed], \
                            prior = prior)
         dlogL = logL_new - logL
@@ -208,7 +223,7 @@ def GP_train_MCMC(Nstep, x, y, cov_par, cov_scales, cov_typ = 'SE', cov_prior = 
         chain[i,1:] = scipy.array(var_par)
     return chain
 
-def GP_predict(p, xpred, x, y, typ = 'SE', MF = None, n_MF_par = 0, \
+def GP_predict(p, xpred, x, y, cov_func = None, cov_typ = 'SE', MF = None, n_MF_par = 0, \
                MF_args = None, MF_args_pred = None, \
                WhiteNoise = False, ReturnCov = False):
     '''
@@ -223,14 +238,23 @@ def GP_predict(p, xpred, x, y, typ = 'SE', MF = None, n_MF_par = 0, \
     else:
         if MF_args == None:
             MF_args = x
-        r = y - scipy.matrix([MF(p[-n_MF_par:], MF_args)]).T    
-    K = GP_covmat(x, x, p[:-n_MF_par-1], typ = typ, sigma = p[-n_MF_par-1])
-    Ks = GP_covmat(xpred, x, p[:-n_MF_par-1], typ = typ)
-    if WhiteNoise == True:
-        Kss = GP_covmat(xpred, xpred, p[:-n_MF_par-1], typ = typ, \
-                        sigma = p[-n_MF_par-1])
+        r = y - scipy.matrix([MF(p[-n_MF_par:], MF_args)]).T
+    if cov_func == None:
+        K = GP_covmat(x, x, p[:-n_MF_par-1], typ = cov_typ, sigma = p[-n_MF_par-1])
+        Ks = GP_covmat(xpred, x, p[:-n_MF_par-1], typ = cov_typ)
+        if WhiteNoise == True:
+            Kss = GP_covmat(xpred, xpred, p[:-n_MF_par-1], typ = cov_typ, \
+                            sigma = p[-n_MF_par-1])
+        else:
+            Kss = GP_covmat(xpred, xpred, p[:-n_MF_par-1], typ = cov_typ)
     else:
-        Kss = GP_covmat(xpred, xpred, p[:-n_MF_par-1], typ = typ)
+        if n_MF_par == 0:
+            covpar_end = len(p)
+        else:
+            covpar_end = -n_MF_par
+        K = cov_func(x, x, p[:covpar_end], white_noise = True)
+        Ks = cov_func(xpred, x, p[:covpar_end], white_noise = False)
+        Kss = cov_func(xpred, xpred, p[:covpar_end], white_noise = WhiteNoise)
     L = scipy.linalg.cho_factor(K)
     b = scipy.linalg.cho_solve(L, r)
     prec_mean = scipy.array(Ks * scipy.matrix(b)).flatten()
@@ -246,7 +270,7 @@ def GP_predict(p, xpred, x, y, typ = 'SE', MF = None, n_MF_par = 0, \
         return prec_mean, \
             scipy.array(scipy.sqrt(numpy.diag(prec_cov))).flatten()
 
-def GP_plotpred(xpred, x, y, cov_par, cov_typ = 'SE',
+def GP_plotpred(xpred, x, y, cov_par, cov_func = None, cov_typ = 'SE',
              MF = None, MF_par = None, MF_args = None, MF_args_pred = None, \
              WhiteNoise = False, plot_color = None):
     '''
@@ -260,11 +284,12 @@ def GP_plotpred(xpred, x, y, cov_par, cov_typ = 'SE',
     else:
         merged_par = cov_par[:]
         n_MF_par = 0
-    fpred, fpred_err = GP_predict(merged_par, xpred, x, y, typ = cov_typ, \
+    fpred, fpred_err = GP_predict(merged_par, xpred, x, y, \
+                                  cov_func = cov_func, cov_typ = cov_typ, \
                                   MF = MF, n_MF_par = n_MF_par, \
                                   MF_args = MF_args, MF_args_pred = MF_args_pred, \
                                   WhiteNoise = WhiteNoise)
-    xpl = scipy.array(xpred).flatten()
+    xpl = scipy.array(xpred[:,0]).flatten()
     if plot_color != None:
         pylab.fill_between(xpl, fpred + 2 * fpred_err, fpred - 2 * fpred_err, \
                            color = plot_color, alpha = 0.1)
@@ -312,7 +337,7 @@ def transit_test(N = 50):
     cov_fixed[1] = False
     MF_fixed = scipy.ones(len(MF_par), 'bool')
     MF_fixed[2] = False
-    cov_par, MF_par = GP_train(X, Y, cov_par, cov_typ, cov_fixed, \
+    cov_par, MF_par = GP_train(X, Y, cov_par, None, cov_typ, cov_fixed, \
                                MF = MF, MF_par = MF_par, MF_args = x, \
                                MF_fixed = MF_fixed)
     print 'Fitted values:', MF_par[2], cov_par[1]
@@ -322,3 +347,4 @@ def transit_test(N = 50):
              MF = MF, MF_par = MF_par, MF_args = x, MF_args_pred = xpred, \
              WhiteNoise = True, plot_color = 'r')
     return
+

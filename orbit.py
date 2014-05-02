@@ -103,7 +103,7 @@ def orbitcoord(t, P, T0 = 0, Ecc = 0, a = 1):
     Compute coordinates X and Y relative to center of mass, in orbital
     plane, for times t, given orbital period P, time of periastron
     passage T0, eccentricity Ecc and semi-major axis a. X is towards
-    observer. The true anomaly Nu is also returned for convenience.
+    pericenter. The true anomaly Nu is also returned for convenience.
     """
     Nu = truean(t, P, T0, Ecc)
     r = truedist(Nu, a, Ecc)

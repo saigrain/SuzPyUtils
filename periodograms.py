@@ -103,23 +103,23 @@ def sinefit(time, data, err = None, fmin = None, fmax = None, \
         cosarg = np.cos(arg)
         sinarg = np.sin(arg)
         a[0,0] = (sinarg**2*w).sum()
-	a[0,1] = (cosarg*sinarg*w).sum()
-	a[0,2] = (sinarg*w).sum()
-	a[1,0] = a[0,1]
-	a[1,1] = (cosarg**2*w).sum()
-	a[1,2] = (cosarg*w).sum()
-	a[2,0] = a[0,2]
-	a[2,1] = a[1,2]
-	a[abs(a)<=small] = 0.
-	if sl.det(a) < small: continue
-	b[0] = (dataw*sinarg).sum()
-	b[1] = (dataw*cosarg).sum()
-	c = sl.solve(a, b)
+        a[0,1] = (cosarg*sinarg*w).sum()
+        a[0,2] = (sinarg*w).sum()
+        a[1,0] = a[0,1]
+        a[1,1] = (cosarg**2*w).sum()
+        a[1,2] = (cosarg*w).sum()
+        a[2,0] = a[0,2]
+        a[2,1] = a[1,2]
+        a[abs(a)<=small] = 0.
+        if sl.det(a) < small: continue
+        b[0] = (dataw*sinarg).sum()
+        b[1] = (dataw*cosarg).sum()
+        c = sl.solve(a, b)
         amp[i+1] = np.sqrt(c[0]**2+c[1]**2)
-	phase[i+1] = np.arctan2(c[1],c[0])
+        phase[i+1] = np.arctan2(c[1],c[0])
         dc[i+1] = c[2]
         f = amp[i+1] * np.sin(arg + phase[i+1]) + dc[i+1]
-	rchi2[i+1] = ((data - f)**2 * w).sum() / ndof
+        rchi2[i+1] = ((data - f)**2 * w).sum() / ndof
     best_rchi2 = mymin(rchi2)
     i = np.where(rchi2 == best_rchi2)[0]
     best_freq = freq[i]
@@ -241,5 +241,5 @@ def AcfPeriodogram(x, dt = 1, norm = False, doplot = False, \
         else:
             plt.ylabel('amplitude')
         plt.xlim(freq.min(),freq.max())
-    return (corr, lags*dt), (pgram, freq)
+    return (corr, lag*dt), (pgram, freq)
 
