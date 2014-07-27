@@ -22,7 +22,7 @@ def GP_covmat(X1, X2, par, typ = 'SE', sigma = None):
         K = par[0]**2 * \
             scipy.exp(- (scipy.sin(scipy.pi * DD / par[1]))**2 / 2. / par[2]**2 \
                       - DD**2 / 2. / par[3]**2) 
-    if typ == 'Per':
+    elif typ == 'Per':
         DD = ssp.distance.cdist(X1, X2, 'euclidean')
         K = par[0]**2 * \
             scipy.exp(- (scipy.sin(scipy.pi * DD / par[1]))**2 / 2. / par[2]**2) 
@@ -34,7 +34,17 @@ def GP_covmat(X1, X2, par, typ = 'SE', sigma = None):
         V = numpy.abs(numpy.matrix( numpy.diag( 1. / numpy.sqrt(2) / par[1:]) ))
         D2 = ssp.distance.cdist(X1 * V, X2 * V, 'sqeuclidean')
         K = par[0]**2 * numpy.exp( -D2 )
+    elif typ == 'SE_SUM':
+        D = X1.shape[1]
+        for i in numpy.arange(D):
+            D2 = ssp.distance.cdist(X1[:,i], X2[:,i], 'sqeuclidean')
+            pp = par[i*2:i*2+2]
+            if i == 0:
+                K = pp[0]**2 * scipy.exp(- D2 / 2. / pp[1]**2)
+            else:
+                K += pp[0]**2 * scipy.exp(- D2 / 2. / pp[1]**2)
     else: # 'SE (radial)'
+        print 'euh'
         D2 = ssp.distance.cdist(X1, X2, 'sqeuclidean')
         K = par[0]**2 * scipy.exp(- D2 / 2. / par[1]**2)
     if sigma != None:
@@ -117,7 +127,7 @@ def GP_negloglik(p, x, y, cov_func = None, cov_typ = 'SE', MF = None, n_MF_par =
     if prior != None:
         for i in scipy.arange(len(p)):
             if prior[i,1] > 0:
-                a += ((par[i] - prior[i,0]) / prior[i,1])**2 
+                a -= (par[i] - prior[i,0])**2 / 2.0 / (prior[i,1])**2 
     return a
 
 def GP_train(x, y, cov_par, cov_func = None, cov_typ ='SE', \
@@ -144,9 +154,10 @@ def GP_train(x, y, cov_par, cov_func = None, cov_typ ='SE', \
         if cov_fixed != None: fixed[:] = cov_fixed
     var_par_in = merged_par[fixed == False]
     fixed_par = merged_par[fixed == True]
-    args = (x, y, cov_func, cov_typ, MF, n_MF_par, MF_args, fixed, fixed_par, prior)
+    args = (x, y, cov_func, cov_typ, MF, n_MF_par, MF_args, fixed, \
+            fixed_par, prior)
     var_par_out = \
-        sop.fmin(GP_negloglik, var_par_in, args)
+        sop.fmin(GP_negloglik, var_par_in, args, disp = 0)
     par_out = scipy.copy(merged_par)
     par_out[fixed == False] = var_par_out
     par_out[fixed == True] = fixed_par

@@ -18,7 +18,7 @@ def medsig(array):
     med = np.median(array[l])
     sig = 1.48 * np.median(abs(array[l] - med))
     return med, sig
-
+  
 def mysum(array, axis = None):
     '''
     Return sum of array along specified axis (ignoring NaNs)
