@@ -1,7 +1,7 @@
 import scipy, pylab, numpy
 import scipy.spatial as ssp
 import scipy.optimize as sop
-from planetc import transit
+# from planetc import transit
 
 '''GP regression routines with a few different kernels, and
 hyper-parameter tuning using max likelihood or a simple MCMC. Incudes
@@ -52,29 +52,29 @@ def GP_covmat(X1, X2, par, typ = 'SE', sigma = None):
         K += sigma**2 * scipy.identity(N)
     return scipy.matrix(K)
 
-def transit_MF(p, x):
-    '''Compute transit light curve for parameters p and times x'''
-    pars = {}
-    pars['P'] = p[0]
-    pars['T0'] = p[1]
-    pars['RpRs'] = p[2]
-    pars['aRs'] = p[3]
-    pars['incl'] = p[4]
-    pars['ecc'] = p[5]
-    pars['omega'] = p[6]
-    pars['foot'] = p[7]
-    pars['grad'] = p[8]
-    if len(p) == 11:
-        pars['ld'] = 'quad'
-        pars['gam1'] = p[9]
-        pars['gam2'] = p[10]
-    else:
-        pars['ld'] = 'nonlin'
-        pars['c1'] = p[9]
-        pars['c2'] = p[10]
-        pars['c3'] = p[11]
-        pars['c4'] = p[12]
-    return transit.ma02_aRs(x, **pars)
+# def transit_MF(p, x):
+#     '''Compute transit light curve for parameters p and times x'''
+#     pars = {}
+#     pars['P'] = p[0]
+#     pars['T0'] = p[1]
+#     pars['RpRs'] = p[2]
+#     pars['aRs'] = p[3]
+#     pars['incl'] = p[4]
+#     pars['ecc'] = p[5]
+#     pars['omega'] = p[6]
+#     pars['foot'] = p[7]
+#     pars['grad'] = p[8]
+#     if len(p) == 11:
+#         pars['ld'] = 'quad'
+#         pars['gam1'] = p[9]
+#         pars['gam2'] = p[10]
+#     else:
+#         pars['ld'] = 'nonlin'
+#         pars['c1'] = p[9]
+#         pars['c2'] = p[10]
+#         pars['c3'] = p[11]
+#         pars['c4'] = p[12]
+#     return transit.ma02_aRs(x, **pars)
 
 def step_MF(p, x):
     y = numpy.zeros(len(x)) + p[0]
@@ -309,53 +309,53 @@ def GP_plotpred(xpred, x, y, cov_par, cov_func = None, cov_typ = 'SE',
         pylab.plot(xpl, fpred, '-', color = plot_color)
     return fpred, fpred_err
 
-def transit_test(N = 50):
-    # Generate a fake dataset 
-    xpred = scipy.r_[-0.12:0.1205:0.0005]
-    MF = transit_MF
-    MF_par = scipy.array([4.47, 0.0, 0.12, 9.85, \
-                          # P, T0, Rp/Rs, a/Rs
-                          85.634, 0.0, 0.0, 1.0, 0.0, \
-                          # incl, ecc, omega, foot, grad
-                          0.4397, 0.3754, 0.1005, -0.0622])
-                          # limb-darkening parameters
-    cov_typ = 'SE_ARD'
-    cov_par = scipy.array([0.0003, 0.01, 0.0001])
-    Xpred = scipy.matrix([xpred]).T
-    x = scipy.copy(xpred)
-    numpy.random.shuffle(x)
-    x = scipy.sort(x[:N])
-    X = scipy.matrix([x]).T
-    K = GP_covmat(X, X, cov_par[:-1], typ = cov_typ, sigma = cov_par[-1])
-    y = MF(MF_par, x)
-    y += numpy.random.multivariate_normal(scipy.zeros(N), K).flatten()
-    Y = scipy.matrix([y]).T
+# def transit_test(N = 50):
+#     # Generate a fake dataset 
+#     xpred = scipy.r_[-0.12:0.1205:0.0005]
+#     MF = transit_MF
+#     MF_par = scipy.array([4.47, 0.0, 0.12, 9.85, \
+#                           # P, T0, Rp/Rs, a/Rs
+#                           85.634, 0.0, 0.0, 1.0, 0.0, \
+#                           # incl, ecc, omega, foot, grad
+#                           0.4397, 0.3754, 0.1005, -0.0622])
+#                           # limb-darkening parameters
+#     cov_typ = 'SE_ARD'
+#     cov_par = scipy.array([0.0003, 0.01, 0.0001])
+#     Xpred = scipy.matrix([xpred]).T
+#     x = scipy.copy(xpred)
+#     numpy.random.shuffle(x)
+#     x = scipy.sort(x[:N])
+#     X = scipy.matrix([x]).T
+#     K = GP_covmat(X, X, cov_par[:-1], typ = cov_typ, sigma = cov_par[-1])
+#     y = MF(MF_par, x)
+#     y += numpy.random.multivariate_normal(scipy.zeros(N), K).flatten()
+#     Y = scipy.matrix([y]).T
     
-    # Alter some parameters away from true values, and make prediction
-    # using those
-    print 'True values:', MF_par[2], cov_par[1]
-    MF_par[2] = 0.1
-    cov_par[1] = 0.1
-    print 'Altered values:', MF_par[2], cov_par[1]
-    pylab.clf()
-    pylab.plot(x, y, 'k.')
-    GP_plotpred(Xpred, X, Y, cov_par, cov_typ = cov_typ,
-             MF = MF, MF_par = MF_par, MF_args = x, MF_args_pred = xpred, \
-             WhiteNoise = True, plot_color = 'b')
+#     # Alter some parameters away from true values, and make prediction
+#     # using those
+#     print 'True values:', MF_par[2], cov_par[1]
+#     MF_par[2] = 0.1
+#     cov_par[1] = 0.1
+#     print 'Altered values:', MF_par[2], cov_par[1]
+#     pylab.clf()
+#     pylab.plot(x, y, 'k.')
+#     GP_plotpred(Xpred, X, Y, cov_par, cov_typ = cov_typ,
+#              MF = MF, MF_par = MF_par, MF_args = x, MF_args_pred = xpred, \
+#              WhiteNoise = True, plot_color = 'b')
 
-    # Now try to fit for the altered parameters, holding the others fixed
-    cov_fixed = scipy.ones(len(cov_par), 'bool')
-    cov_fixed[1] = False
-    MF_fixed = scipy.ones(len(MF_par), 'bool')
-    MF_fixed[2] = False
-    cov_par, MF_par = GP_train(X, Y, cov_par, None, cov_typ, cov_fixed, \
-                               MF = MF, MF_par = MF_par, MF_args = x, \
-                               MF_fixed = MF_fixed)
-    print 'Fitted values:', MF_par[2], cov_par[1]
+#     # Now try to fit for the altered parameters, holding the others fixed
+#     cov_fixed = scipy.ones(len(cov_par), 'bool')
+#     cov_fixed[1] = False
+#     MF_fixed = scipy.ones(len(MF_par), 'bool')
+#     MF_fixed[2] = False
+#     cov_par, MF_par = GP_train(X, Y, cov_par, None, cov_typ, cov_fixed, \
+#                                MF = MF, MF_par = MF_par, MF_args = x, \
+#                                MF_fixed = MF_fixed)
+#     print 'Fitted values:', MF_par[2], cov_par[1]
     
-    # and make a prediction using the fitted values
-    GP_plotpred(Xpred, X, Y, cov_par, cov_typ = cov_typ,
-             MF = MF, MF_par = MF_par, MF_args = x, MF_args_pred = xpred, \
-             WhiteNoise = True, plot_color = 'r')
-    return
+#     # and make a prediction using the fitted values
+#     GP_plotpred(Xpred, X, Y, cov_par, cov_typ = cov_typ,
+#              MF = MF, MF_par = MF_par, MF_args = x, MF_args_pred = xpred, \
+#              WhiteNoise = True, plot_color = 'r')
+#     return
 
