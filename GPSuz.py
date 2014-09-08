@@ -44,7 +44,6 @@ def GP_covmat(X1, X2, par, typ = 'SE', sigma = None):
             else:
                 K += pp[0]**2 * scipy.exp(- D2 / 2. / pp[1]**2)
     else: # 'SE (radial)'
-        print 'euh'
         D2 = ssp.distance.cdist(X1, X2, 'sqeuclidean')
         K = par[0]**2 * scipy.exp(- D2 / 2. / par[1]**2)
     if sigma != None:
