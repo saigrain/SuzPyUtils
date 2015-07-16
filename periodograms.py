@@ -169,6 +169,71 @@ def sinefit(time, data, err = None, fmin = None, fmax = None, \
     return (rchi2, freq, amp, phase, dc), \
 	(best_rchi2, best_freq, best_amp, best_phase, best_dc)
 
+def sinefitm(time, data, w = None, \
+             fmin = None, fmax = None, nfreq = None):
+    '''
+    
+    Least squares fit of sine curve to data, processes multiple
+    time-series simlutaneously, returns reduced chi2 and amplitudes only.
+
+    '''
+    
+    if fmin is None:
+        fmin = 1. / (mymax(time) - mymin(time))
+    if fmax is None:
+        fmax = 0.5 / mymin(time[1:] - time[:-1])
+    if nfreq is None:
+        nfreq = int(fmax/fmin)
+    freq = np.r_[fmin:fmax:nfreq*1j]
+    nobj, nobs = data.shape
+    if w == None:
+        w = np.ones(nobs)
+    freq = np.append(0, freq)
+    rchi2 = np.zeros((nobj,nfreq+1)) + np.nan
+    dc = np.zeros((nobj,nfreq+1)) + np.nan
+    amps = np.zeros((nobj,nfreq+1)) + np.nan
+    ampc = np.zeros((nobj,nfreq+1)) + np.nan
+    sumw = w.sum()
+    dataw = data * w
+    sumdw = dataw.sum(axis=1)
+    meanw = sumdw / sumw
+    dc[:,0] = meanw
+    ndof = float(nobs-1)
+    rchi2[:,0] = (((data.T - dc[:,0])**2).T * w).sum(axis=1) / ndof
+    amps[:,0] = 0.
+    ampc[:,0] = 0.
+    a = np.matrix(np.empty((3,3)))
+    a[2,2] = sumw
+    b = np.empty(3)
+    ndof -= 3
+    for i in np.arange(nfreq):
+        arg = 2 * np.pi * freq[i] * time
+        cosarg = np.cos(arg)
+        sinarg = np.sin(arg)
+        a[0,0] = (sinarg**2*w).sum()
+        a[0,1] = (cosarg*sinarg*w).sum()
+        a[0,2] = (sinarg*w).sum()
+        a[1,0] = a[0,1]
+        a[1,1] = (cosarg**2*w).sum()
+        a[1,2] = (cosarg*w).sum()
+        a[2,0] = a[0,2]
+        a[2,1] = a[1,2]
+        a[abs(a)<=small] = 0.
+        if sl.det(a) < small: continue
+        for j in np.arange(nobj):
+            b[0] = (dataw[j,:].flatten()*sinarg).sum()
+            b[1] = (dataw[j,:].flatten()*cosarg).sum()
+            b[2] = sumdw[j]
+            c = sl.solve(a, b)
+            amps[j,i+1] = c[0]
+            ampc[j,i+1] = c[1]
+            dc[j,i+1] = c[2]
+        fit = amps[:,i+1].reshape((nobj,1)) * sinarg.reshape((1,nobs)) + \
+          ampc[:,i+1].reshape((nobj,1))  * cosarg.reshape((1,nobs)) + \
+          dc[:,i+1].reshape((nobj,1))
+        rchi2[:,i+1] = ((data - fit)**2 * w).sum(axis=1) / ndof
+    return freq, rchi2, amps, ampc, dc
+    
 def DftPowerSpectrum(x, dt = 1, norm = False, doplot = False):
     '''
     Compute power spectrum (squared modulus of discrete Fourier
