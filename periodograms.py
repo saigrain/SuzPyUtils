@@ -12,7 +12,7 @@ from norm import *
 
 small = np.MachAr().eps
 
-def sinefit(time, data, err = None, fmin = None, fmax = None, \
+def sinefit(time, data, err = None, weights = None, fmin = None, fmax = None, \
             sampling = 'linear', nfreq = None, doplot = True):
     '''
     
@@ -30,7 +30,7 @@ def sinefit(time, data, err = None, fmin = None, fmax = None, \
         data: observable values, numpy array
         err: uncertainties on observables, if available, numpy array or scalar
         fmin: minimum frequency, scalar
-            default: 1. / (max(time) - min(time)
+            default: 1. / (max(time) - min(time))
         fmax: maximum frequency, scalar
             default: 0.5 / min(time[1:] - time[:-1])
             note that time is assumed to be sorted
@@ -44,9 +44,9 @@ def sinefit(time, data, err = None, fmin = None, fmax = None, \
 
     Outputs:
         pgram: periodogram, tuple consisiting of: 
-            freq: frequency values, numpy array
             rchi2: reduced chi2 values as a function of frequency for best
                 amplitude, phase and zero-point, numpy array
+            freq: frequency values, numpy array
             amp: best amplitude as a function of frequency, numpy array
             phase: best phase as a function of frequency, numpy array
             dc: best zero-point as a function of frequency, numpy array
@@ -75,10 +75,14 @@ def sinefit(time, data, err = None, fmin = None, fmax = None, \
     else:
         freq = np.r_[fmin:fmax:nfreq*1j]
     n = len(time)
-    if err is None:
-        w = np.ones(n)
+    if weights is None:
+        if err is None:
+            w = np.ones(n)
+        else:
+            w = np.ones(n) / err**2
     else:
-        w = np.ones(n) / err**2
+        w = weights.copy()
+        
     freq = np.append(0, freq)
     rchi2 = np.zeros(nfreq+1) + np.nan
     amp = np.zeros(nfreq+1) + np.nan
@@ -131,43 +135,43 @@ def sinefit(time, data, err = None, fmin = None, fmax = None, \
         ttl = '%.3f %.3f %.3f %.5f %.3f %.5f' % \
 	    (best_rchi2, best_per, best_freq, best_amp, best_phase, best_dc)
         print ttl
-	plt.figure(figsize = (6,7.5), edgecolor = 'w')
-	plt.subplot(311)
-	if err is None:
-	    plt.plot(time, data, 'k.')
-	else:
-	    plt.errorbar(time, data, err, fmt = 'k.', capsize = 0)
-	plt.xlabel('time')
-	plt.ylabel('data')
-	plt.title(ttl)
-	n_p = freq[i] * (mymax(time) - mymin(time)) 
-	if n_p < 20:
-	    x = np.r_[mymin(time):mymax(time):101j]
-	    plt.plot(x, best_amp * np.sin(2 * np.pi * best_freq * x + best_phase) + \
-		     best_dc, 'r-')
-	plt.xlim(mymin(time), mymax(time))
-	plt.subplot(312)
-	if (sampling is 'log') + (sampling is 'inverse'):
-	    plt.semilogx()
-	plt.axvline(best_freq, c = 'r')
-	plt.plot(freq[1:], rchi2[0] - rchi2[1:], 'k-')
-	plt.xlabel('frequency')
-	plt.ylabel('$\delta \chi^2$')
-	plt.xlim(mymin(freq), mymax(freq))
-	plt.subplot(313)
-	ph = (time % best_per) / best_per
-	if err is None:
-	    plt.plot(ph, data, 'k.')
-	else:
-	    plt.errorbar(ph, data, err, fmt = 'k.', capsize = 0)
-	x = np.r_[0:best_per:101j]
-	y = best_amp * np.sin(2 * np.pi * x / best_per + best_phase) + best_dc
-	plt.plot(x/best_per, y, 'r')
-	plt.xlim(0,1)
-	plt.xlabel('phase')
-	plt.ylabel('data')
+        plt.figure(figsize = (6,7.5), edgecolor = 'w')
+        plt.subplot(311)
+        if err is None:
+            plt.plot(time, data, 'k.')
+        else:
+            plt.errorbar(time, data, err, fmt = 'k.', capsize = 0)
+        plt.xlabel('time')
+        plt.ylabel('data')
+        plt.title(ttl)
+        n_p = freq[i] * (mymax(time) - mymin(time)) 
+        if n_p < 20:
+            x = np.r_[mymin(time):mymax(time):101j]
+            plt.plot(x, best_amp * np.sin(2 * np.pi * best_freq * x + best_phase) + \
+                best_dc, 'r-')
+        plt.xlim(mymin(time), mymax(time))
+        plt.subplot(312)
+        if (sampling is 'log') + (sampling is 'inverse'):
+            plt.semilogx()
+        plt.axvline(best_freq, c = 'r')
+        plt.plot(freq[1:], rchi2[0] - rchi2[1:], 'k-')
+        plt.xlabel('frequency')
+        plt.ylabel('$\delta \chi^2$')
+        plt.xlim(mymin(freq), mymax(freq))
+        plt.subplot(313)
+        ph = (time % best_per) / best_per
+        if err is None:
+            plt.plot(ph, data, 'k.')
+        else:
+            plt.errorbar(ph, data, err, fmt = 'k.', capsize = 0)
+        x = np.r_[0:best_per:101j]
+        y = best_amp * np.sin(2 * np.pi * x / best_per + best_phase) + best_dc
+        plt.plot(x/best_per, y, 'r')
+        plt.xlim(0,1)
+        plt.xlabel('phase')
+        plt.ylabel('data')
     return (rchi2, freq, amp, phase, dc), \
-	(best_rchi2, best_freq, best_amp, best_phase, best_dc)
+      (best_rchi2, best_freq, best_amp, best_phase, best_dc)
 
 def sinefitm(time, data, w = None, \
              fmin = None, fmax = None, nfreq = None):
